@@ -518,7 +518,7 @@ sub load {
     method => 'insert',
     project_id => $project_id,
     dataset_id => $dataset_id,
-    talbe_id => $table_id,
+    table_id => $table_id,
     content => $content,
     data => $data,
     async => $async
@@ -673,7 +673,7 @@ sub selectall_arrayref {
   my $content = {
     query => $query,
   };
-
+  #print "<li>query $query";
   # option
   if (defined $dataset_id) {
     $content->{defaultDataset}{projectId} = $project_id;
@@ -695,6 +695,9 @@ sub selectall_arrayref {
   );
   $self->{response} = $response;
 
+  #use Data::Dumper;
+  #print Dumper %{$response};
+
   if (defined $response->{error}) {
     warn $response->{error}{message};
     return 0;
@@ -709,7 +712,67 @@ sub selectall_arrayref {
     push @$ret, $row;
   }
 
-  return $ret;
+  return $ret, $response->{jobReference}{jobId}, $response->{pageToken};
+}
+
+sub selectall_arrayref_page {
+  my ($self, %args) = @_;
+
+  my $query = $args{query};
+  my $project_id = $args{project_id} // $self->{project_id};
+  my $dataset_id = $args{dataset_id} // $self->{dataset_id};
+
+  unless ($project_id) {
+    warn "no project\n";
+    return 0;
+  }
+
+  my $content = {
+    query => $query,
+  };
+
+  # option
+  if (defined $dataset_id) {
+    $content->{defaultDataset}{projectId} = $project_id;
+    $content->{defaultDataset}{datasetId} = $dataset_id;
+  }
+
+  # option
+  my $query_string = {};
+  $query_string->{maxResults} = $args{maxResults} if defined $args{maxResults};
+  $query_string->{startIndex} = $args{startIndex} if defined $args{startIndex};
+  $query_string->{timeoutMs} = $args{timeoutMs} if defined $args{timeoutMs};
+
+  my $response = $self->request(
+    resource => 'jobs',
+    method => 'getQueryResults',
+    project_id => $project_id,
+    job_id => $args{job_id},
+    query_string => $query_string,
+  );
+
+  $self->{response} = $response;
+
+  if (defined $response->{error}) {
+    #print "error $response->{error}{message} \n";
+    warn $response->{error}{message};
+    return 0;
+  }
+
+  #use Data::Dumper;
+  #print Dumper %{$response};
+
+  my $ret = [];
+  foreach my $rows (@{$response->{rows}}) {
+    my $row = [];
+    foreach my $field (@{$rows->{f}}) {
+      push @$row, $field->{v};
+    }
+    push @$ret, $row;
+  }
+
+  #print "<li> [$response->{jobReference}{jobId}, $response->{pageToken}]";
+  return $ret, $response->{jobReference}{jobId}, $response->{pageToken};
 }
 
 sub is_exists_dataset {
@@ -861,7 +924,7 @@ sub extract {
     method => 'insert',
     project_id => $project_id,
     dataset_id => $dataset_id,
-    talbe_id => $table_id,
+    table_id => $table_id,
     content => $content,
     data => $data
   );
