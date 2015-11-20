@@ -673,7 +673,7 @@ sub selectall_arrayref {
   my $content = {
     query => $query,
   };
-  #print "<li>query $query";
+
   # option
   if (defined $dataset_id) {
     $content->{defaultDataset}{projectId} = $project_id;
@@ -694,9 +694,6 @@ sub selectall_arrayref {
     content => $content
   );
   $self->{response} = $response;
-
-  #use Data::Dumper;
-  #print Dumper %{$response};
 
   if (defined $response->{error}) {
     warn $response->{error}{message};
@@ -754,13 +751,9 @@ sub selectall_arrayref_page {
   $self->{response} = $response;
 
   if (defined $response->{error}) {
-    #print "error $response->{error}{message} \n";
     warn $response->{error}{message};
     return 0;
   }
-
-  #use Data::Dumper;
-  #print Dumper %{$response};
 
   my $ret = [];
   foreach my $rows (@{$response->{rows}}) {
@@ -771,7 +764,6 @@ sub selectall_arrayref_page {
     push @$ret, $row;
   }
 
-  #print "<li> [$response->{jobReference}{jobId}, $response->{pageToken}]";
   return $ret, $response->{jobReference}{jobId}, $response->{pageToken};
 }
 
