@@ -121,20 +121,19 @@ sub request {
       }
       $path = join('?', $path, join('&', @query_string));
     }
-    #print "<li>$http_method ---  path [$path]";
+
     my $request = HTTP::Request->new($http_method, $path, $header);
     if ($http_method =~ /^(?:POST|PUT|PATCH)$/) {
       $request->header('Content-Type' => 'application/json');
       $request->content(encode_json($args{content}));
     }
     my $response = $self->{ua}->request($request);
-    #print "<li>response code [$response->code]";
+
     if ($response->code == 204) {
       return {};
     } elsif (defined $response->content) {
       # easy json check
       if ($response->content =~ /^\s*[{\[]/) {
-        #print "<li> response ". decode_json($response->decoded_content);
         return decode_json($response->decoded_content);
       } else {
         return { error => { message => $response->content }};
